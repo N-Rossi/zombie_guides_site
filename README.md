@@ -39,6 +39,9 @@ updated: 2026-08-19
 summary: "One-line description shown on listing pages."
 youtube:                 # optional — embedded at the top of the guide
   - "https://www.youtube.com/watch?v=XXXXXXXXXXX"
+credit:                  # optional — when the strategy comes from someone's video.
+  name: "CreatorName"    # `author` is who wrote the text; `credit` is whose strategy
+  url: "https://www.youtube.com/watch?v=XXXXXXXXXXX"
 tags: ["solo-friendly"]  # optional
 ---
 
