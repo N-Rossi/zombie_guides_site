@@ -1,0 +1,29 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Not found">
+  <div class="lost">
+    <p class="eyebrow">Error 404</p>
+    <h1>You went down.</h1>
+    <p>This page doesn't exist — or it bled out waiting for a revive.</p>
+    <p><a class="btn btn-ghost" href="/">Back to the archive</a></p>
+  </div>
+</Base>
+
+<style>
+  .lost {
+    padding: 4rem 0;
+    text-align: center;
+  }
+
+  .lost h1 {
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    color: var(--type-high-round);
+    margin: 0.4rem 0 0.8rem;
+  }
+
+  .lost p {
+    color: var(--ink-muted);
+  }
+</style>

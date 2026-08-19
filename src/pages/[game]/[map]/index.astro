@@ -1,0 +1,122 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import GuideRecord from '../../../components/GuideRecord.astro';
+import { GAMES, GUIDE_TYPES } from '../../../data/games';
+
+export async function getStaticPaths() {
+  return GAMES.flatMap((game) =>
+    game.maps.map((map) => ({
+      params: { game: game.id, map: map.id },
+      props: { game, map },
+    }))
+  );
+}
+
+const { game, map } = Astro.props;
+const guides = await getCollection(
+  'guides',
+  (g) => g.data.game === game.id && g.data.map === map.id
+);
+
+const sections = GUIDE_TYPES.map((type) => ({
+  type,
+  // "map guide" / "easter egg guide" / "relic guide" — avoids "guide guide"
+  label: type.name.toLowerCase().endsWith('guide')
+    ? type.name.toLowerCase()
+    : `${type.name.toLowerCase()} guide`,
+  guides: guides
+    .filter((g) => g.data.type === type.id)
+    .sort((a, b) => b.data.updated.getTime() - a.data.updated.getTime()),
+}));
+
+const submitBase = `/submit?game=${game.id}&map=${map.id}`;
+---
+
+<Base title={`${map.name} (${game.shortName})`} description={`Zombies guides for ${map.name}.`}>
+  <p class="eyebrow">
+    <a href="/">Archive</a> / <a href={`/${game.id}/`}>{game.shortName}</a> / {map.name}
+  </p>
+  <h1 class="page-title">{map.name}</h1>
+  <p class="page-sub">{game.name} · {game.year}</p>
+
+  {
+    sections.map(({ type, label, guides: list }) => (
+      <section aria-labelledby={`sec-${type.id}`}>
+        <h2 class="section-title" id={`sec-${type.id}`}>
+          <span class={`type-chip t-${type.id}`}>{type.name}{type.unique ? '' : 's'}</span>
+        </h2>
+
+        {list.length === 0 ? (
+          <div class={`record record-empty t-${type.id}`}>
+            No {label} for {map.name} yet.{' '}
+            <a href={`${submitBase}&type=${type.id}`}>Write the first one →</a>
+          </div>
+        ) : type.unique ? (
+          <>
+            <GuideRecord guide={list[0]} showType={false} />
+            <p class="add-more">
+              <a href={`${submitBase}&type=${type.id}&mode=change&title=${encodeURIComponent(list[0].data.title)}`}>
+                Something wrong? Request a change →
+              </a>
+            </p>
+            {list.length > 1 && (
+              <p class="dupe-note">
+                Note: {list.length} {label}s exist for this map, but only one is canonical —
+                the most recently updated is shown. Merge the others.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            {list.map((guide) => (
+              <GuideRecord guide={guide} showType={false} />
+            ))}
+            <p class="add-more">
+              <a href={`${submitBase}&type=${type.id}`}>+ Submit another {type.name.toLowerCase()} strategy</a>
+            </p>
+          </>
+        )}
+      </section>
+    ))
+  }
+</Base>
+
+<style>
+  .page-title {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    margin-top: 0.3rem;
+  }
+
+  .page-sub {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    margin: 0.4rem 0 1.5rem;
+  }
+
+  .section-title {
+    margin: 2.2rem 0 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .section-title .type-chip {
+    font-size: 0.85rem;
+  }
+
+  .add-more {
+    margin: 0.7rem 0 0;
+  }
+
+  .add-more a {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+
+  .dupe-note {
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    margin: 0.5rem 0 0;
+  }
+</style>

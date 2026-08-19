@@ -1,0 +1,146 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import GuideRecord from '../components/GuideRecord.astro';
+import { GAMES } from '../data/games';
+import { SITE } from '../data/site';
+
+const guides = await getCollection('guides');
+const countByGame = new Map<string, number>();
+for (const g of guides) {
+  countByGame.set(g.data.game, (countByGame.get(g.data.game) ?? 0) + 1);
+}
+
+const latest = [...guides]
+  .sort((a, b) => b.data.updated.getTime() - a.data.updated.getTime())
+  .slice(0, 6);
+---
+
+<Base>
+  <section class="hero">
+    <p class="eyebrow">Treyarch Zombies · 2008 — present</p>
+    <h1>{SITE.name}</h1>
+    <p class="lede">
+      Player-written guides for every Treyarch Zombies map: main quest easter eggs,
+      high round strategies, relics, and map knowledge. Found a better strat?
+      <a href="/submit">Submit it.</a>
+    </p>
+  </section>
+
+  <section aria-labelledby="games-heading">
+    <h2 class="section-title" id="games-heading">The archive</h2>
+    <ol class="game-index">
+      {
+        GAMES.map((game) => (
+          <li>
+            <a class="game-row" href={`/${game.id}/`}>
+              <span class="game-year">{game.year}</span>
+              <span class="game-name">{game.name}</span>
+              <span class="game-stats">
+                {game.maps.length} {game.maps.length === 1 ? 'map' : 'maps'} ·{' '}
+                {countByGame.get(game.id) ?? 0}{' '}
+                {(countByGame.get(game.id) ?? 0) === 1 ? 'guide' : 'guides'}
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  {
+    latest.length > 0 && (
+      <section aria-labelledby="latest-heading">
+        <h2 class="section-title" id="latest-heading">Latest guides</h2>
+        <div>
+          {latest.map((guide) => (
+            <GuideRecord guide={guide} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+</Base>
+
+<style>
+  .hero {
+    padding: 2.5rem 0 3rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 9vw, 5.5rem);
+    color: var(--ink);
+    text-shadow: 0 0 40px rgba(255, 176, 58, 0.25);
+    margin: 0.3rem 0 0.8rem;
+  }
+
+  .lede {
+    max-width: 38rem;
+    font-size: 1.08rem;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    color: var(--ink-muted);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.4rem;
+    margin: 2.5rem 0 1rem;
+  }
+
+  .game-index {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .game-row {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr auto;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+  }
+
+  .game-row:hover {
+    text-decoration: none;
+    background: var(--bg-raised);
+  }
+
+  .game-row:hover .game-name {
+    color: var(--amber);
+  }
+
+  .game-year {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+  }
+
+  .game-name {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    letter-spacing: 0.04em;
+  }
+
+  .game-stats {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+    text-align: right;
+  }
+
+  @media (max-width: 540px) {
+    .game-row {
+      grid-template-columns: 3.2rem 1fr;
+    }
+
+    .game-stats {
+      grid-column: 2;
+      text-align: left;
+    }
+  }
+</style>

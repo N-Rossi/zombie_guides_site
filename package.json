@@ -1,0 +1,17 @@
+{
+  "name": "zombie-guides",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.2.5",
+    "@fontsource/ibm-plex-sans": "^5.2.5",
+    "@fontsource/staatliches": "^5.2.5",
+    "astro": "^5.12.0"
+  }
+}

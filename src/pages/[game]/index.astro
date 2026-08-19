@@ -1,0 +1,111 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { GAMES, GUIDE_TYPES } from '../../data/games';
+
+export async function getStaticPaths() {
+  return GAMES.map((game) => ({ params: { game: game.id }, props: { game } }));
+}
+
+const { game } = Astro.props;
+const guides = await getCollection('guides', (g) => g.data.game === game.id);
+
+function countFor(mapId: string, typeId: string) {
+  return guides.filter((g) => g.data.map === mapId && g.data.type === typeId).length;
+}
+---
+
+<Base title={game.name} description={`Zombies guides for every ${game.name} map.`}>
+  <p class="eyebrow"><a href="/">Archive</a> / {game.shortName}</p>
+  <h1 class="page-title">{game.name}</h1>
+  <p class="page-sub">{game.year} · {game.maps.length} {game.maps.length === 1 ? 'map' : 'maps'}</p>
+
+  <ul class="map-grid">
+    {
+      game.maps.map((map) => (
+        <li>
+          <a class="map-card" href={`/${game.id}/${map.id}/`}>
+            <span class="map-name">{map.name}</span>
+            <span class="map-counts">
+              {GUIDE_TYPES.map((t) => {
+                const n = countFor(map.id, t.id);
+                return n > 0 ? (
+                  <span class={`type-chip t-${t.id}`}>
+                    {n} {t.name.toLowerCase()}
+                  </span>
+                ) : null;
+              })}
+              {guides.filter((g) => g.data.map === map.id).length === 0 && (
+                <span class="no-guides">no guides yet</span>
+              )}
+            </span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Base>
+
+<style>
+  .page-title {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    margin-top: 0.3rem;
+  }
+
+  .page-sub {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    margin: 0.4rem 0 2rem;
+  }
+
+  .map-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 0.8rem;
+  }
+
+  .map-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    height: 100%;
+    padding: 1rem 1.1rem;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+
+  .map-card:hover {
+    text-decoration: none;
+    border-color: var(--line-strong);
+    background: #201c18;
+  }
+
+  .map-card:hover .map-name {
+    color: var(--amber);
+  }
+
+  .map-name {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    letter-spacing: 0.04em;
+  }
+
+  .map-counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.9rem;
+  }
+
+  .no-guides {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+</style>

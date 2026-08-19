@@ -1,0 +1,139 @@
+---
+import '@fontsource/staatliches';
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/600.css';
+import '../styles/global.css';
+import { SITE } from '../data/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description = SITE.tagline } = Astro.props;
+const fullTitle = title ? `${title} — ${SITE.name}` : SITE.name;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="masthead-inner">
+        <a class="wordmark" href="/">
+          <span class="wordmark-sigil" aria-hidden="true">115</span>
+          <span class="wordmark-text">{SITE.name}</span>
+        </a>
+        <nav aria-label="Main">
+          <a href="/">Maps</a>
+          <a href="/submit">Submit a guide</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        {SITE.name} is a community project. Guides are written by players, for players —
+        <a href="/submit">submit yours</a>.
+      </p>
+      <p class="fine">Not affiliated with Activision or Treyarch.</p>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .masthead {
+    border-bottom: 1px solid var(--line);
+    background: rgba(13, 12, 11, 0.75);
+    backdrop-filter: blur(6px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .masthead-inner {
+    max-width: var(--site-width);
+    margin: 0 auto;
+    padding: 0.7rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--ink);
+  }
+
+  .wordmark:hover {
+    text-decoration: none;
+  }
+
+  .wordmark-sigil {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+    padding: 0.15rem 0.35rem;
+    letter-spacing: 0.08em;
+  }
+
+  .wordmark-text {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    letter-spacing: 0.06em;
+  }
+
+  nav {
+    display: flex;
+    gap: 1.4rem;
+  }
+
+  nav a {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  nav a:hover {
+    color: var(--amber);
+    text-decoration: none;
+  }
+
+  .site-footer {
+    border-top: 1px solid var(--line);
+    max-width: none;
+    padding: 1.5rem 1.25rem 2.5rem;
+    text-align: center;
+    color: var(--ink-muted);
+    font-size: 0.88rem;
+  }
+
+  .site-footer p {
+    margin: 0.3rem 0;
+  }
+
+  .site-footer .fine {
+    color: var(--ink-faint);
+    font-size: 0.78rem;
+  }
+</style>

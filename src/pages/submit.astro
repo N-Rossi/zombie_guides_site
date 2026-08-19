@@ -1,0 +1,442 @@
+---
+import Base from '../layouts/Base.astro';
+import { GAMES, GUIDE_TYPES } from '../data/games';
+import { SITE } from '../data/site';
+
+const gamesJson = JSON.stringify(
+  GAMES.map((g) => ({ id: g.id, name: g.name, maps: g.maps }))
+);
+const typesJson = JSON.stringify(GUIDE_TYPES);
+---
+
+<Base title="Submit" description="Submit a new Zombies guide, or request a change to an existing one.">
+  <p class="eyebrow">Contribute</p>
+  <h1 class="page-title">Submit</h1>
+
+  <fieldset class="mode-toggle" id="mode-toggle">
+    <legend class="sr-only">What are you submitting?</legend>
+    <label>
+      <input type="radio" name="mode" value="new" checked />
+      <span>New guide</span>
+    </label>
+    <label>
+      <input type="radio" name="mode" value="change" />
+      <span>Change request</span>
+    </label>
+  </fieldset>
+
+  <p class="lede" data-mode-copy="new">
+    Fill this out and hit <strong>Generate</strong>. You'll get a finished markdown file —
+    send it in as a GitHub issue (or copy it and share it however you like). Once it's
+    reviewed, it goes live in the archive.
+  </p>
+  <p class="lede" data-mode-copy="change" hidden>
+    Easter egg, relic, and map guides have one canonical version per map — instead of
+    writing a competing guide, tell us what's wrong and how it should read.
+    <em>"Step 3 is outdated — here's how it actually works now."</em>
+  </p>
+
+  <form id="guide-form">
+    <div class="form-grid">
+      <label class="field">
+        <span>Game</span>
+        <select id="f-game" required></select>
+      </label>
+      <label class="field">
+        <span>Map</span>
+        <select id="f-map" required></select>
+      </label>
+      <label class="field">
+        <span>Guide type</span>
+        <select id="f-type" required></select>
+        <span class="hint" id="type-hint"></span>
+      </label>
+      <label class="field">
+        <span>Your name / handle</span>
+        <input id="f-author" type="text" placeholder="Anonymous" maxlength="60" />
+      </label>
+    </div>
+
+    <div id="new-fields">
+      <label class="field">
+        <span>Guide title</span>
+        <input id="f-title" type="text" required maxlength="90" placeholder="e.g. Alcatraz catwalk training route" />
+      </label>
+
+      <label class="field">
+        <span>One-line summary</span>
+        <input id="f-summary" type="text" maxlength="160" placeholder="What does this guide get the reader?" />
+      </label>
+
+      <label class="field">
+        <span>YouTube links (optional, one per line)</span>
+        <textarea id="f-youtube" rows="2" placeholder="https://www.youtube.com/watch?v=..."></textarea>
+        <span class="hint">These get embedded at the top of the guide.</span>
+      </label>
+
+      <label class="field">
+        <span>The guide (markdown)</span>
+        <textarea id="f-body" rows="16" required placeholder={'## Setup\n\n1. Open the power room first...\n\n## The strategy\n\nTrain zombies around the...'}></textarea>
+        <span class="hint">
+          Use ## headings for sections and numbered lists for step-by-step parts. Plain text works fine too.
+        </span>
+      </label>
+    </div>
+
+    <div id="change-fields" hidden>
+      <label class="field">
+        <span>Which guide? (title, if you know it)</span>
+        <input id="f-target" type="text" maxlength="120" placeholder="e.g. My Brother's Keeper — main quest" />
+      </label>
+
+      <label class="field">
+        <span>What's wrong, and how should it read instead?</span>
+        <textarea id="f-change" rows="10" required placeholder={'The Step 2 bow order is wrong since the update — you have to shoot the fireplace symbol FIRST, then...\n\nBe as specific as you can: quote the step, then give the correction.'}></textarea>
+        <span class="hint">
+          Point at the exact step or section, then give the fix. Link a video timestamp if you have one.
+        </span>
+      </label>
+    </div>
+
+    <button class="btn" type="submit" id="submit-btn">Generate submission</button>
+  </form>
+
+  <section id="result" hidden>
+    <h2 class="section-title" id="result-heading">Your submission</h2>
+    <p class="result-file" id="result-file-line">
+      File: <code id="result-path"></code>
+    </p>
+    <pre id="result-md" tabindex="0"></pre>
+    <div class="result-actions">
+      <button class="btn" type="button" id="copy-btn">Copy text</button>
+      <a class="btn btn-ghost" id="issue-link" target="_blank" rel="noopener" hidden>
+        Open GitHub issue →
+      </a>
+    </div>
+    <p class="hint" id="no-repo-note" hidden>
+      (GitHub submission isn't configured yet — the site owner needs to set
+      <code>repoUrl</code> in <code>src/data/site.ts</code>. For now, copy the text
+      and send it to them directly.)
+    </p>
+  </section>
+</Base>
+
+<script is:inline define:vars={{ gamesJson, typesJson, repoUrl: SITE.repoUrl }}>
+  const games = JSON.parse(gamesJson);
+  const types = JSON.parse(typesJson);
+  const $ = (id) => document.getElementById(id);
+
+  const typeHints = {
+    'map-guide': 'One canonical guide per map — layout, perks, pack-a-punch, wonder weapons.',
+    'easter-egg': 'One canonical guide per map — the main quest, step by step.',
+    'high-round': 'Open-ended — as many strategies as the map can hold.',
+    relic: "One canonical guide per map, covering the map's relics and challenges.",
+  };
+
+  const gameSel = $('f-game');
+  const mapSel = $('f-map');
+  const typeSel = $('f-type');
+  let mode = 'new';
+
+  for (const g of games) {
+    const opt = document.createElement('option');
+    opt.value = g.id;
+    opt.textContent = g.name;
+    gameSel.appendChild(opt);
+  }
+  for (const t of types) {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.name;
+    typeSel.appendChild(opt);
+  }
+
+  function fillMaps() {
+    const game = games.find((g) => g.id === gameSel.value) ?? games[0];
+    mapSel.innerHTML = '';
+    for (const m of game.maps) {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name;
+      mapSel.appendChild(opt);
+    }
+  }
+
+  function updateHint() {
+    const t = types.find((x) => x.id === typeSel.value);
+    let hint = typeHints[typeSel.value] ?? '';
+    if (mode === 'new' && t?.unique) {
+      hint += ' If this map already has one, switch to a change request instead.';
+    }
+    $('type-hint').textContent = hint;
+  }
+
+  function setMode(next) {
+    mode = next;
+    const isNew = mode === 'new';
+    $('new-fields').hidden = !isNew;
+    $('change-fields').hidden = isNew;
+    // Disabled fields are skipped by both validation and submission.
+    for (const el of $('new-fields').querySelectorAll('input, textarea')) el.disabled = !isNew;
+    for (const el of $('change-fields').querySelectorAll('input, textarea')) el.disabled = isNew;
+    $('submit-btn').textContent = isNew ? 'Generate submission' : 'Generate change request';
+    for (const p of document.querySelectorAll('[data-mode-copy]')) {
+      p.hidden = p.dataset.modeCopy !== mode;
+    }
+    $('result').hidden = true;
+    updateHint();
+  }
+
+  document.querySelectorAll('#mode-toggle input').forEach((r) =>
+    r.addEventListener('change', () => setMode(r.value))
+  );
+  gameSel.addEventListener('change', fillMaps);
+  typeSel.addEventListener('change', updateHint);
+
+  // Preselect from ?mode=&game=&map=&type=&title= links scattered around the site.
+  const params = new URLSearchParams(location.search);
+  if (params.get('game') && games.some((g) => g.id === params.get('game'))) {
+    gameSel.value = params.get('game');
+  }
+  fillMaps();
+  if (params.get('map') && [...mapSel.options].some((o) => o.value === params.get('map'))) {
+    mapSel.value = params.get('map');
+  }
+  if (params.get('type') && types.some((t) => t.id === params.get('type'))) {
+    typeSel.value = params.get('type');
+  }
+  if (params.get('title')) {
+    $('f-target').value = params.get('title');
+  }
+  if (params.get('mode') === 'change') {
+    document.querySelector('#mode-toggle input[value="change"]').checked = true;
+    setMode('change');
+  } else {
+    setMode('new');
+  }
+
+  function slugify(text) {
+    return (
+      text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60) || 'guide'
+    );
+  }
+
+  $('guide-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const game = gameSel.value;
+    const map = mapSel.value;
+    const type = typeSel.value;
+    const typeInfo = types.find((t) => t.id === type);
+    const author = $('f-author').value.trim() || 'Anonymous';
+    const today = new Date().toISOString().slice(0, 10);
+    const mapName = games.find((g) => g.id === game)?.maps.find((m) => m.id === map)?.name ?? map;
+
+    let text = '';
+    let issueTitle = '';
+    let issueBody = '';
+
+    if (mode === 'new') {
+      const title = $('f-title').value.trim();
+      const summary = $('f-summary').value.trim();
+      const youtube = $('f-youtube')
+        .value.split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const body = $('f-body').value.trim();
+
+      const q = (s) => `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+      const lines = [
+        '---',
+        `title: ${q(title)}`,
+        `game: ${game}`,
+        `map: ${map}`,
+        `type: ${type}`,
+        `author: ${q(author)}`,
+        `updated: ${today}`,
+      ];
+      if (summary) lines.push(`summary: ${q(summary)}`);
+      if (youtube.length) {
+        lines.push('youtube:');
+        for (const url of youtube) lines.push(`  - ${q(url)}`);
+      }
+      lines.push('---', '', body, '');
+      text = lines.join('\n');
+
+      const slug = typeInfo?.unique ? type : slugify(title);
+      const path = `src/content/guides/${game}/${map}/${slug}.md`;
+      $('result-path').textContent = path;
+      $('result-file-line').hidden = false;
+      $('result-heading').textContent = 'Your submission';
+
+      issueTitle = `[Guide submission] ${title} (${game}/${map})`;
+      issueBody = `New guide submission. Save as \`${path}\`:\n\n` + '```markdown\n' + text + '\n```\n';
+    } else {
+      const target = $('f-target').value.trim();
+      const change = $('f-change').value.trim();
+      const typeName = typeInfo?.name ?? type;
+
+      text = [
+        'CHANGE REQUEST',
+        '==============',
+        `Guide: ${mapName} (${game}/${map}) — ${typeName}${target ? ` — "${target}"` : ''}`,
+        `Requested by: ${author}`,
+        `Date: ${today}`,
+        '',
+        change,
+        '',
+      ].join('\n');
+
+      $('result-file-line').hidden = true;
+      $('result-heading').textContent = 'Your change request';
+
+      issueTitle = `[Change request] ${typeName} @ ${game}/${map}${target ? ` — ${target}` : ''}`;
+      issueBody = text;
+    }
+
+    $('result-md').textContent = text;
+    $('result').hidden = false;
+
+    const issueLink = $('issue-link');
+    if (repoUrl) {
+      const href = `${repoUrl.replace(/\/$/, '')}/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(issueBody)}`;
+      issueLink.href = href;
+      issueLink.hidden = false;
+      $('no-repo-note').hidden = true;
+    } else {
+      issueLink.hidden = true;
+      $('no-repo-note').hidden = false;
+    }
+
+    $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  $('copy-btn').addEventListener('click', async () => {
+    await navigator.clipboard.writeText($('result-md').textContent);
+    $('copy-btn').textContent = 'Copied ✓';
+    setTimeout(() => ($('copy-btn').textContent = 'Copy text'), 1600);
+  });
+</script>
+
+<style>
+  .page-title {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    margin-top: 0.3rem;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .mode-toggle {
+    display: inline-flex;
+    gap: 0;
+    border: 1px solid var(--line-strong);
+    padding: 0;
+    margin: 1.2rem 0 1rem;
+  }
+
+  .mode-toggle label {
+    cursor: pointer;
+  }
+
+  .mode-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .mode-toggle span {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.55rem 1.1rem;
+    color: var(--ink-muted);
+  }
+
+  .mode-toggle label + label span {
+    border-left: 1px solid var(--line-strong);
+  }
+
+  .mode-toggle input:checked + span {
+    background: var(--amber);
+    color: var(--bg);
+  }
+
+  .mode-toggle input:focus-visible + span {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  .lede {
+    max-width: var(--measure);
+    color: var(--ink-muted);
+    margin: 0.8rem 0 2rem;
+  }
+
+  form {
+    max-width: var(--measure);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1rem;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    color: var(--ink-muted);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.4rem;
+    margin: 3rem 0 1rem;
+  }
+
+  .result-file {
+    font-size: 0.88rem;
+    color: var(--ink-muted);
+  }
+
+  #result-md {
+    background: var(--bg-inset);
+    border: 1px solid var(--line);
+    padding: 1rem;
+    overflow-x: auto;
+    max-height: 24rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    max-width: var(--measure);
+    white-space: pre-wrap;
+  }
+
+  .result-actions {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .hint {
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+  }
+</style>

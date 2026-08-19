@@ -1,0 +1,26 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getGuideType } from '../data/games';
+
+interface Props {
+  guide: CollectionEntry<'guides'>;
+  showType?: boolean;
+}
+
+const { guide, showType = true } = Astro.props;
+const slug = guide.id.split('/').pop();
+const href = `/${guide.data.game}/${guide.data.map}/${slug}/`;
+const typeName = getGuideType(guide.data.type)?.name ?? guide.data.type;
+const updated = guide.data.updated.toISOString().slice(0, 10);
+---
+
+<a class={`record t-${guide.data.type}`} href={href}>
+  <div class="record-title">{guide.data.title}</div>
+  <div class="record-meta">
+    {showType && <span class={`type-chip t-${guide.data.type}`}>{typeName}</span>}
+    <span>by {guide.data.author}</span>
+    <span>updated {updated}</span>
+    {guide.data.youtube.length > 0 && <span>▸ video</span>}
+  </div>
+  {guide.data.summary && <p class="record-summary">{guide.data.summary}</p>}
+</a>
