@@ -48,6 +48,15 @@ const fullTitle = title ? `${title} — ${SITE.name}` : SITE.name;
         {SITE.name} is a community project. Guides are written by players, for players —
         <a href="/submit">submit yours</a>.
       </p>
+      {
+        SITE.tipUrl && (
+          <p>
+            <a class="tip-jar" href={SITE.tipUrl} target="_blank" rel="noopener">
+              ☕ Fuel the archive
+            </a>
+          </p>
+        )
+      }
       <p class="fine">Not affiliated with Activision or Treyarch.</p>
     </footer>
   </body>
@@ -135,5 +144,23 @@ const fullTitle = title ? `${title} — ${SITE.name}` : SITE.name;
   .site-footer .fine {
     color: var(--ink-faint);
     font-size: 0.78rem;
+  }
+
+  .tip-jar {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+    padding: 0.5rem 1rem;
+    margin-top: 0.4rem;
+  }
+
+  .tip-jar:hover {
+    text-decoration: none;
+    background: rgba(255, 176, 58, 0.08);
   }
 </style>
