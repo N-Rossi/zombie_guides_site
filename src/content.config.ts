@@ -17,6 +17,14 @@ const guides = defineCollection({
       updated: z.coerce.date(),
       summary: z.string().optional(),
       youtube: z.array(z.string().url()).default([]),
+      // When the strategy comes from someone's video, credit them here.
+      // `author` is who wrote this text; `credit` is whose strategy it is.
+      credit: z
+        .object({
+          name: z.string(),
+          url: z.string().url().optional(),
+        })
+        .optional(),
       tags: z.array(z.string()).default([]),
     })
     .superRefine((data, ctx) => {

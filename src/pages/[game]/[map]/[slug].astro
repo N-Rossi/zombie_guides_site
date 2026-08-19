@@ -44,6 +44,21 @@ const changeUrl = `${submitBase}&mode=change&title=${encodeURIComponent(guide.da
         <span>updated {updated}</span>
         {guide.data.tags.map((tag) => <span class="tag">#{tag}</span>)}
       </div>
+      {
+        guide.data.credit && (
+          <p class="guide-credit">
+            Strategy by{' '}
+            {guide.data.credit.url ? (
+              <a href={guide.data.credit.url} target="_blank" rel="noopener">
+                {guide.data.credit.name}
+              </a>
+            ) : (
+              <strong>{guide.data.credit.name}</strong>
+            )}
+            {guide.data.youtube.length > 0 && ' — watch their original video below.'}
+          </p>
+        )
+      }
       {guide.data.summary && <p class="guide-summary">{guide.data.summary}</p>}
     </header>
 
@@ -102,6 +117,12 @@ const changeUrl = `${submitBase}&mode=change&title=${encodeURIComponent(guide.da
 
   .tag {
     color: var(--ink-faint);
+  }
+
+  .guide-credit {
+    font-size: 0.9rem;
+    color: var(--ink-muted);
+    margin: 0.7rem 0 0;
   }
 
   .guide-summary {

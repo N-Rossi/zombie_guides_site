@@ -74,6 +74,21 @@ const typesJson = JSON.stringify(GUIDE_TYPES);
         <span class="hint">These get embedded at the top of the guide.</span>
       </label>
 
+      <div class="form-grid">
+        <label class="field">
+          <span>Strategy credit (optional)</span>
+          <input id="f-credit-name" type="text" maxlength="80" placeholder="Creator's name" />
+        </label>
+        <label class="field">
+          <span>Their video / channel link</span>
+          <input id="f-credit-url" type="url" maxlength="300" placeholder="https://www.youtube.com/..." />
+        </label>
+      </div>
+      <p class="hint credit-hint">
+        Not your strategy? Credit whoever came up with it — the guide will show
+        "Strategy by them" linking to their video.
+      </p>
+
       <label class="field">
         <span>The guide (markdown)</span>
         <textarea id="f-body" rows="16" required placeholder={'## Setup\n\n1. Open the power room first...\n\n## The strategy\n\nTrain zombies around the...'}></textarea>
@@ -265,6 +280,13 @@ const typesJson = JSON.stringify(GUIDE_TYPES);
       if (youtube.length) {
         lines.push('youtube:');
         for (const url of youtube) lines.push(`  - ${q(url)}`);
+      }
+      const creditName = $('f-credit-name').value.trim();
+      const creditUrl = $('f-credit-url').value.trim();
+      if (creditName) {
+        lines.push('credit:');
+        lines.push(`  name: ${q(creditName)}`);
+        if (creditUrl) lines.push(`  url: ${q(creditUrl)}`);
       }
       lines.push('---', '', body, '');
       text = lines.join('\n');
